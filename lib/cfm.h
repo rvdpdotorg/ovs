@@ -51,8 +51,15 @@ enum cfm_fault_reason {
 #undef CFM_FAULT_REASON
 };
 
+#define CCM_MAID_LEN 48
+#define DEFAULT_MD_NAME "ovs"
+#define DEFAULT_MA_NAME "ovs"
+
 struct cfm_settings {
     uint64_t mpid;              /* The MPID of this CFM. */
+    uint8_t md_level;           /* The Maintenance Domain Level of this CFM. */
+    char md_name[CCM_MAID_LEN]; /* The Maintenance Domain Name of this CFM. */
+    char ma_name[CCM_MAID_LEN]; /* The Maintenance Association Name of this CFM. */
     int interval;               /* The requested transmission interval. */
     bool extended;              /* Run in extended mode. */
     bool demand;                /* Run in demand mode. */
@@ -88,7 +95,7 @@ struct cfm_status {
 };
 
 void cfm_init(void);
-struct cfm *cfm_create(const struct netdev *);
+struct cfm *cfm_create(const struct netdev *, const struct cfm_settings *);
 struct cfm *cfm_ref(const struct cfm *);
 void cfm_unref(struct cfm *);
 void cfm_run(struct cfm *);

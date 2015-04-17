@@ -1918,7 +1918,7 @@ set_cfm(struct ofport *ofport_, const struct cfm_settings *s)
 
     if (s) {
         if (!ofport->cfm) {
-            ofport->cfm = cfm_create(ofport->up.netdev);
+            ofport->cfm = cfm_create(ofport->up.netdev, s);
         }
 
         if (cfm_configure(ofport->cfm, s)) {

@@ -4501,6 +4501,25 @@ iface_configure_cfm(struct iface *iface)
     s.mpid = *cfg->cfm_mpid;
     s.interval = smap_get_int(&iface->cfg->other_config, "cfm_interval", 0);
     cfm_ccm_vlan = smap_get(&iface->cfg->other_config, "cfm_ccm_vlan");
+    if (smap_get(&iface->cfg->other_config, "cfm_md_name") != NULL) {
+        strncpy(s.md_name, smap_get(&iface->cfg->other_config, "cfm_md_name"), CCM_MAID_LEN);
+    } else {
+        strncpy(s.md_name, DEFAULT_MD_NAME, CCM_MAID_LEN);
+    }
+    if (smap_get(&iface->cfg->other_config, "cfm_ma_name") != NULL) {
+        strncpy(s.ma_name, smap_get(&iface->cfg->other_config, "cfm_ma_name"), CCM_MAID_LEN);
+    } else {
+        strncpy(s.ma_name, DEFAULT_MA_NAME, CCM_MAID_LEN);
+    }
+    if (smap_get(&iface->cfg->other_config, "cfm_md_level") != NULL) {
+        s.md_level = atoi(smap_get(&iface->cfg->other_config, "cfm_md_level"));
+    } else {
+        s.md_level = 0;
+    }
+    /* Maintenance Domain Level (md_level) should be in range 0..7 */
+    if (s.md_level > 7) {
+        s.md_level = 0;
+    }
     s.ccm_pcp = smap_get_int(&iface->cfg->other_config, "cfm_ccm_pcp", 0);
 
     if (s.interval <= 0) {

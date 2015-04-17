@@ -95,6 +95,7 @@ struct cfm {
     uint64_t rx_packets;        /* Packets received by 'netdev'. */
 
     uint64_t mpid;
+    uint8_t md_level;      /* Maintenance Domain Level */
     bool demand;           /* Demand mode. */
     bool booted;           /* A full fault interval has occurred. */
     enum cfm_fault_reason fault;  /* Connectivity fault status. */
@@ -224,12 +225,20 @@ ds_put_cfm_fault(struct ds *ds, int fault)
 }
 
 static void
-cfm_generate_maid(struct cfm *cfm) OVS_REQUIRES(mutex)
+cfm_generate_maid(struct cfm *cfm, const struct cfm_settings *s) OVS_REQUIRES(mutex)
 {
-    const char *ovs_md_name = "ovs";
-    const char *ovs_ma_name = "ovs";
+    const char *ovs_md_name;
+    const char *ovs_ma_name;
     uint8_t *ma_p;
     size_t md_len, ma_len;
+
+    if (s != NULL) {
+        ovs_md_name = s->md_name;
+        ovs_ma_name = s->ma_name;
+    } else {
+        ovs_md_name = DEFAULT_MD_NAME;
+        ovs_ma_name = DEFAULT_MA_NAME;
+    }
 
     memset(cfm->maid, 0, CCM_MAID_LEN);
 
@@ -346,7 +355,7 @@ cfm_status_changed(struct cfm *cfm) OVS_REQUIRES(mutex)
 /* Allocates a 'cfm' object called 'name'.  'cfm' should be initialized by
  * cfm_configure() before use. */
 struct cfm *
-cfm_create(const struct netdev *netdev) OVS_EXCLUDED(mutex)
+cfm_create(const struct netdev *netdev, const struct cfm_settings *s) OVS_EXCLUDED(mutex)
 {
     struct cfm *cfm;
 
@@ -365,7 +374,7 @@ cfm_create(const struct netdev *netdev) OVS_EXCLUDED(mutex)
 
     ovs_mutex_lock(&mutex);
     cfm_status_changed(cfm);
-    cfm_generate_maid(cfm);
+    cfm_generate_maid(cfm, s);
     hmap_insert(all_cfms, &cfm->hmap_node, hash_string(cfm->name, 0));
     ovs_mutex_unlock(&mutex);
 
@@ -588,7 +597,7 @@ cfm_compose_ccm(struct cfm *cfm, struct dp_packet *packet,
     atomic_read_relaxed(&cfm->extended, &extended);
 
     ccm = dp_packet_l3(packet);
-    ccm->mdlevel_version = 0;
+    ccm->mdlevel_version = (cfm->md_level << 5) & 0xe0;
     ccm->opcode = CCM_OPCODE;
     ccm->tlv_offset = 70;
     ccm->seq = htonl(++cfm->seq);
@@ -671,6 +680,8 @@ cfm_configure(struct cfm *cfm, const struct cfm_settings *s)
     ovs_mutex_lock(&mutex);
     cfm->mpid = s->mpid;
     cfm->opup = s->opup;
+    cfm_generate_maid(cfm, s);
+    cfm->md_level = s->md_level;
     interval = ms_to_ccm_interval(s->interval);
     interval_ms = ccm_interval_to_ms(interval);
 
