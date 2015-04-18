@@ -4509,7 +4509,7 @@ iface_configure_cfm(struct iface *iface)
     /* Initialize to default if "other_config:cfm_md_name" is unset or the empty string */
     if (strlen(s.md_name) == 0) {
         strncpy(s.md_name, DEFAULT_MD_NAME, sizeof(DEFAULT_MD_NAME));
-    }   
+    }
 
     memset(s.ma_name, 0, CCM_MAX_MA_LEN);
     if (smap_get(&iface->cfg->other_config, "cfm_ma_name") != NULL) {
@@ -4518,7 +4518,7 @@ iface_configure_cfm(struct iface *iface)
     /* Initialize to default if "other_config:cfm_ma_name" is unset or the empty string */
     if (strlen(s.ma_name) == 0) {
         strncpy(s.ma_name, DEFAULT_MA_NAME, sizeof(DEFAULT_MA_NAME));
-    }   
+    }
 
     if (smap_get(&iface->cfg->other_config, "cfm_md_level") != NULL) {
         s.md_level = strtol(smap_get(&iface->cfg->other_config, "cfm_md_level"), NULL, 0);
