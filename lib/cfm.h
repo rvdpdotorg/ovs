@@ -52,14 +52,22 @@ enum cfm_fault_reason {
 };
 
 #define CCM_MAID_LEN 48
+/*
+ * The sizes of MD_NAME and MA_NAME must satisfy:
+ * length(MD_NAME) + length(MA_NAME) + 4 <= CCM_MAID_LEN
+ * We choose to limit both sizes to a maximum length of:
+ * (CCM_MAID_LEN - 4) / 2
+*/
+#define CCM_MAX_MD_LEN  (CCM_MAID_LEN - 4) / 2
+#define CCM_MAX_MA_LEN  (CCM_MAID_LEN - 4) / 2
 #define DEFAULT_MD_NAME "ovs"
 #define DEFAULT_MA_NAME "ovs"
 
 struct cfm_settings {
     uint64_t mpid;              /* The MPID of this CFM. */
     uint8_t md_level;           /* The Maintenance Domain Level of this CFM. */
-    char md_name[CCM_MAID_LEN]; /* The Maintenance Domain Name of this CFM. */
-    char ma_name[CCM_MAID_LEN]; /* The Maintenance Association Name of this CFM. */
+    char md_name[CCM_MAX_MD_LEN]; /* The Maintenance Domain Name of this CFM. */
+    char ma_name[CCM_MAX_MA_LEN]; /* The Maintenance Association Name of this CFM. */
     int interval;               /* The requested transmission interval. */
     bool extended;              /* Run in extended mode. */
     bool demand;                /* Run in demand mode. */

@@ -4501,18 +4501,27 @@ iface_configure_cfm(struct iface *iface)
     s.mpid = *cfg->cfm_mpid;
     s.interval = smap_get_int(&iface->cfg->other_config, "cfm_interval", 0);
     cfm_ccm_vlan = smap_get(&iface->cfg->other_config, "cfm_ccm_vlan");
+
+    memset(s.md_name, 0, CCM_MAX_MD_LEN);
     if (smap_get(&iface->cfg->other_config, "cfm_md_name") != NULL) {
-        strncpy(s.md_name, smap_get(&iface->cfg->other_config, "cfm_md_name"), CCM_MAID_LEN);
-    } else {
-        strncpy(s.md_name, DEFAULT_MD_NAME, CCM_MAID_LEN);
+        strncpy(s.md_name, smap_get(&iface->cfg->other_config, "cfm_md_name"), CCM_MAX_MD_LEN);
     }
+    /* Initialize to default if "other_config:cfm_md_name" is unset or the empty string */
+    if (strlen(s.md_name) == 0) {
+        strncpy(s.md_name, DEFAULT_MD_NAME, sizeof(DEFAULT_MD_NAME));
+    }   
+
+    memset(s.ma_name, 0, CCM_MAX_MA_LEN);
     if (smap_get(&iface->cfg->other_config, "cfm_ma_name") != NULL) {
-        strncpy(s.ma_name, smap_get(&iface->cfg->other_config, "cfm_ma_name"), CCM_MAID_LEN);
-    } else {
-        strncpy(s.ma_name, DEFAULT_MA_NAME, CCM_MAID_LEN);
+        strncpy(s.ma_name, smap_get(&iface->cfg->other_config, "cfm_ma_name"), CCM_MAX_MA_LEN);
     }
+    /* Initialize to default if "other_config:cfm_ma_name" is unset or the empty string */
+    if (strlen(s.ma_name) == 0) {
+        strncpy(s.ma_name, DEFAULT_MA_NAME, sizeof(DEFAULT_MA_NAME));
+    }   
+
     if (smap_get(&iface->cfg->other_config, "cfm_md_level") != NULL) {
-        s.md_level = atoi(smap_get(&iface->cfg->other_config, "cfm_md_level"));
+        s.md_level = strtol(smap_get(&iface->cfg->other_config, "cfm_md_level"), NULL, 0);
     } else {
         s.md_level = 0;
     }
