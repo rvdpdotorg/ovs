@@ -44,13 +44,29 @@ VLOG_DEFINE_THIS_MODULE(cfm);
 #define CFM_MAX_RMPS 256
 
 /* Ethernet destination address of CCM packets. */
-static const uint8_t eth_addr_ccm[ETH_ADDR_LEN] = {
-    0x01, 0x80, 0xC2, 0x00, 0x00, 0x30 };
-static const uint8_t eth_addr_ccm_x[ETH_ADDR_LEN] = {
-    0x01, 0x23, 0x20, 0x00, 0x00, 0x30
+static const uint8_t eth_addr_ccm[][ETH_ADDR_LEN] = {
+    {0x01, 0x80, 0xC2, 0x00, 0x00, 0x30},
+    {0x01, 0x80, 0xC2, 0x00, 0x00, 0x31},
+    {0x01, 0x80, 0xC2, 0x00, 0x00, 0x32},
+    {0x01, 0x80, 0xC2, 0x00, 0x00, 0x33},
+    {0x01, 0x80, 0xC2, 0x00, 0x00, 0x34},
+    {0x01, 0x80, 0xC2, 0x00, 0x00, 0x35},
+    {0x01, 0x80, 0xC2, 0x00, 0x00, 0x36},
+    {0x01, 0x80, 0xC2, 0x00, 0x00, 0x37}
+ };
+static const uint8_t eth_addr_ccm_x[][ETH_ADDR_LEN] = {
+    {0x01, 0x23, 0x20, 0x00, 0x00, 0x30},
+    {0x01, 0x23, 0x20, 0x00, 0x00, 0x31},
+    {0x01, 0x23, 0x20, 0x00, 0x00, 0x32},
+    {0x01, 0x23, 0x20, 0x00, 0x00, 0x33},
+    {0x01, 0x23, 0x20, 0x00, 0x00, 0x34},
+    {0x01, 0x23, 0x20, 0x00, 0x00, 0x35},
+    {0x01, 0x23, 0x20, 0x00, 0x00, 0x36},
+    {0x01, 0x23, 0x20, 0x00, 0x00, 0x37},
 };
 
 #define ETH_TYPE_CFM 0x8902
+#define DOT1AG_VERSION 0
 
 /* A 'ccm' represents a Continuity Check Message from the 802.1ag
  * specification.  Continuity Check Messages are broadcast periodically so that
@@ -193,7 +209,9 @@ cfm_ccm_addr(struct cfm *cfm)
 
     atomic_read_relaxed(&cfm->extended, &extended);
 
-    return extended ? eth_addr_ccm_x : eth_addr_ccm;
+    /* Only process frames with the same MD Level as us. */
+    ovs_assert(cfm->md_level <= 7);
+    return extended ? eth_addr_ccm_x[cfm->md_level] : eth_addr_ccm[cfm->md_level];
 }
 
 /* Returns the string representation of the given cfm_fault_reason 'reason'. */
@@ -597,7 +615,15 @@ cfm_compose_ccm(struct cfm *cfm, struct dp_packet *packet,
     atomic_read_relaxed(&cfm->extended, &extended);
 
     ccm = dp_packet_l3(packet);
-    ccm->mdlevel_version = (cfm->md_level << 5) & 0xe0;
+    /*
+     * mdlevel_version: 
+     * +-------------------------------+
+     * |   level   |      version      |
+     * +-----------+-------------------+
+     * | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
+     * +-------------------------------+
+     */
+    ccm->mdlevel_version = DOT1AG_VERSION | (cfm->md_level << 5);
     ccm->opcode = CCM_OPCODE;
     ccm->tlv_offset = 70;
     ccm->seq = htonl(++cfm->seq);
